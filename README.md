@@ -117,6 +117,26 @@ Open [http://localhost:3000](http://localhost:3000)
 └─────────────────────────────────────────────────────────┘
 ```
 
+## 🛡️ TideCloak Protection Architecture & Simulation (Plan C)
+
+Following the UNLOCKED Challenge Plan C guidance, CargoTrust models TideCloak's architecture directly into its execution flow and verifies it via Tide's official MCP server:
+
+1. **Simulated Sign-in & DPoP Token Generation**:
+   - Uses [`TideCloakAuthModal.tsx`](file:///c:/Users/Admin/Downloads/cargotrust-trade-document-authority-execution-gateway/src/components/TideCloakAuthModal.tsx) to simulate decentralized passwordless authentication via Tide PRISM.
+   - Binds every user session to an ephemeral client keypair using Demonstrating Proof-of-Possession (`dpop_jkt`).
+   - Issues 64-hex Verifiable User Identifiers (`vuid_0x...`) with zero central password storage.
+
+2. **Role-Based Access Control (RBAC)**:
+   - Evaluates realm-level claims: `supplier.admin`, `compliance.officer`, `customer.pacific_aero`, `customer.nova_mobile`, `platform.admin`.
+   - Protects sensitive supply-chain actions according to matched Tide scenario `policy-governed-signing`.
+
+3. **Emergent Authority & Access Checks**:
+   - `canProposeQuorum`: Restricted to Supplier Admin (Key 1/2).
+   - `canCoSignQuorum`: Restricted to Independent Compliance Officer (Key 2/2).
+   - `unilateralUnlock`: Mathematically blocked across 14-of-20 simulated ORK threshold nodes.
+   - `crossTenantIsolation`: Customer B cannot decrypt Customer A's wafer lot data (`403 Forbidden: Tenant Barrier`).
+   - `rogueAdminOverride`: Blocked because 0 master keys exist on the network.
+
 ---
 
 ## 🔧 Tech Stack

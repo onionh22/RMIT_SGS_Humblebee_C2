@@ -3,7 +3,8 @@ import {
   Menu, 
   ChevronDown, 
   Languages, 
-  BookOpen
+  BookOpen,
+  Shield
 } from 'lucide-react';
 import { UserSession } from '../types';
 import { USERS } from '../data/initialData';
@@ -19,6 +20,7 @@ interface TopbarProps {
   onOpenNotifications: () => void;
   onOpenInstruction?: () => void;
   onOpenTideModal?: () => void;
+  onOpenTideAuthModal?: () => void;
   onOpenScenarios?: () => void;
   onOpenArchitecture?: () => void;
   onOpenSubmissionKit?: () => void;
@@ -37,6 +39,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   onOpenNotifications,
   onOpenInstruction,
   onOpenTideModal,
+  onOpenTideAuthModal,
   onOpenScenarios,
   onOpenArchitecture,
   onOpenSubmissionKit,
@@ -119,6 +122,19 @@ export const Topbar: React.FC<TopbarProps> = ({
           <Languages className="w-3.5 h-3.5 text-blue-600" />
           <span>{lang === 'vi' ? 'VI' : 'EN'}</span>
         </button>
+
+        {/* TideCloak Sign-In & Roles Simulator Button */}
+        {onOpenTideAuthModal && (
+          <button
+            onClick={onOpenTideAuthModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50/90 hover:bg-indigo-100 text-xs font-bold text-indigo-700 transition-colors shadow-2xs cursor-pointer"
+            title={lang === 'vi' ? 'Mô phỏng xác thực & phân quyền TideCloak' : 'Simulate TideCloak Sign-in & Roles'}
+          >
+            <Shield className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="hidden sm:inline">TideCloak Auth</span>
+            <span className="sm:hidden">Auth</span>
+          </button>
+        )}
 
         {/* Minimal Persona Switcher */}
         <div className="relative">

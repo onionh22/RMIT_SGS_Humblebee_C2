@@ -38,6 +38,7 @@ import { ArchitectureFlowsModal } from './components/ArchitectureFlowsModal';
 import { EvidenceExchange } from './components/EvidenceExchange';
 import { SubmissionKitModal } from './components/SubmissionKitModal';
 import { TideSecurityCenter } from './components/TideSecurityCenter';
+import { TideCloakAuthModal } from './components/TideCloakAuthModal';
 import { HackathonPersona } from './types';
 import { HACKATHON_PERSONAS } from './utils/quorumEngine';
 import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
@@ -78,6 +79,7 @@ export default function App() {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isTideModalOpen, setIsTideModalOpen] = useState(false);
+  const [isTideAuthModalOpen, setIsTideAuthModalOpen] = useState(false);
   const [isInstructionModalOpen, setIsInstructionModalOpen] = useState(false);
   const [isScenariosModalOpen, setIsScenariosModalOpen] = useState(false);
   const [isArchitectureModalOpen, setIsArchitectureModalOpen] = useState(false);
@@ -381,6 +383,7 @@ export default function App() {
           onOpenUpload={() => setIsUploadOpen(true)}
           onOpenNotifications={() => setCurrentPage('approvals')}
           onOpenInstruction={() => setIsInstructionModalOpen(true)}
+          onOpenTideAuthModal={() => setIsTideAuthModalOpen(true)}
           onNavigateHome={() => {
             setSelectedOrderId(null);
             setCurrentPage('overview');
@@ -571,6 +574,23 @@ export default function App() {
           onShowToast={showToast}
         />
       )}
+
+      {/* TideCloak Sign-in, Roles & Access Checks Simulator Modal */}
+      <TideCloakAuthModal
+        isOpen={isTideAuthModalOpen}
+        onClose={() => setIsTideAuthModalOpen(false)}
+        currentUser={currentUser}
+        onSelectUser={(user) => {
+          setCurrentUser(user);
+          // Also sync hackathon persona if matching
+          if (user.id === 'sarah') setHackathonPersona(HACKATHON_PERSONAS['supplier-admin']);
+          if (user.id === 'elena') setHackathonPersona(HACKATHON_PERSONAS['compliance-officer']);
+          if (user.id === 'marcus') setHackathonPersona(HACKATHON_PERSONAS['customer-a']);
+          if (user.id === 'james') setHackathonPersona(HACKATHON_PERSONAS['customer-b']);
+        }}
+        lang={lang}
+        onShowToast={showToast}
+      />
 
       {/* Interactive Demo Scenarios Center */}
       {isScenariosModalOpen && (
