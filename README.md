@@ -6,7 +6,15 @@
 
 *UNLOCKED Hackathon — RMIT × Tide Foundation, October 2026*
 
+🎥 **[Watch 2-Minute Demo Video (Google Drive)](https://drive.google.com/file/d/1OlzRfKkmDd5HobUww7VbboO0Wmh1Ihzb/view)**
+
 </div>
+
+---
+
+## 🎬 2-Minute Demo Video
+
+▶️ **Link:** [Humblebee.mp4 on Google Drive](https://drive.google.com/file/d/1OlzRfKkmDd5HobUww7VbboO0Wmh1Ihzb/view)
 
 ---
 

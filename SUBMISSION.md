@@ -4,6 +4,7 @@
 **Challenge**: Challenge 2 — UNLOCKED (Tide Foundation × RMIT)  
 **Project**: CargoTrust — Trade Document Authority & Execution Gateway  
 **Repository**: [onionh22/RMIT_SGS_Humblebee_C2](https://github.com/onionh22/RMIT_SGS_Humblebee_C2)  
+**Demo Video**: [Humblebee.mp4 on Google Drive](https://drive.google.com/file/d/1OlzRfKkmDd5HobUww7VbboO0Wmh1Ihzb/view)  
 
 ---
 
