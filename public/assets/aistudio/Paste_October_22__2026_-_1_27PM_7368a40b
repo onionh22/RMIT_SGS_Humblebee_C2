@@ -1,0 +1,745 @@
+Mình đồng ý với hướng bạn đề xuất. Thực ra, đây không chỉ là vấn đề giao diện mà còn là **cách mô hình hóa nghiệp vụ logistics và tổ chức dữ liệu của CargoTrust**. Nếu thiết kế đúng từ đầu, app sẽ gần với cách doanh nghiệp thực sự quản lý giao dịch xuất nhập khẩu hơn, đồng thời giúp AI đối chiếu chứng từ hiệu quả hơn.
+
+Mình sẽ brainstorm lại kiến trúc và luồng nghiệp vụ trước, **chưa sửa app ở bước này**.
+
+# 1. Vấn đề của thiết kế hiện tại: Quản lý chứng từ hay quản lý đơn hàng?
+
+Ở phiên bản CargoTrust hiện tại, người dùng chủ yếu nhìn thấy một danh sách chứng từ riêng lẻ:
+
+* PO-1182
+* INV-2408
+* PL-2408
+* BL-2408
+* ...
+
+Thiết kế này không sai, vì doanh nghiệp vẫn cần quản lý, tìm kiếm và truy xuất từng chứng từ. Tuy nhiên, nó có một hạn chế: **người dùng phải tự liên kết các chứng từ với nhau để hiểu toàn bộ tình trạng của một giao dịch**.
+
+Hãy tưởng tượng một đơn hàng nhập khẩu linh kiện điện tử từ Hàn Quốc.
+
+Doanh nghiệp có:
+
+* Một hợp đồng mua bán.
+* Một đơn đặt hàng.
+* Một hóa đơn thương mại.
+* Một phiếu đóng gói.
+* Một vận đơn.
+* Một chứng nhận xuất xứ.
+* Một số chứng nhận chất lượng khác.
+
+Nếu người dùng chỉ nhìn thấy một bảng gồm hàng trăm chứng từ, họ phải tự tìm ra những tài liệu nào thuộc cùng một giao dịch, chứng từ nào còn thiếu và thông tin nào chưa khớp.
+
+Ví dụ, người dùng có thể phải mở Invoice, sau đó tìm Packing List, rồi tìm Contract để đối chiếu số lượng, giá trị và thông tin đối tác.
+
+Đây chính là vấn đề CargoTrust nên giải quyết.
+
+## Đề xuất: Chuyển từ Document-centric sang Order-centric
+
+Thay vì coi từng chứng từ là trung tâm của ứng dụng, chúng ta nên coi **đơn hàng là trung tâm, còn các chứng từ là những thành phần liên kết với đơn hàng đó**.
+
+![Image](https://images.openai.com/static-rsc-4/5qWYwvrVWB3sk2GpLLd4ocN2Hhb6E0qirHcHmjXbowrM3EFHSBgLPXwCwLpk1svlBGRdmMwvN4X_lIXHxcyZ1psu3jFD3d7MIQoSWm190IZeRXSmxtb6yOyKLRyuydy2mrieQZPPyEeHg8RvJJCclwgPU8_iyROLCR3pve9uE3DHpWqPbSCSIjPriLzjSRlU?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/6BCqp9fiG39WzySFOij_OL5LoXGc6cnGfMMTnGE6nSVCzJQWwlLjIZoYBQjKNiFVSa73EV2ESQnrrDODiwO0lajHzEASQ0tA6FzphZrb1LRa1kP3eG2rvlmnPUxBYzGDyH34B706s0sucAuNU9jkG5Hg1mKpAKnARtn92sC7ve5S0GYPOE9NyeWFYwg4tWEe?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/71apnjpgvtpzvjj2wINjEOSuQ4m_fsl7wILURBaq7lMODOxZG4Q6azQVWaIgAuV6_tHvounzgfxc_faOnPb-JD2OXFrwS7uDnajPTl-RSfpWenY9iVoNS9c6u052zyE-O3WTZYPVtqa-ypcCYeEv1WM31xBrgTwQLbK9DrHCIoG_dbJRxs9FQ_u_9A7tFT0a?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/DwwirdF1WT0Vc8q4t6VRKWrKQn9_xa-31zZgAsp5_oo-x6mCcsJJiJmKXwDUyT8CpkfgCSFdWjQFU9YvEA0WmzYBYKq5o_DOrHtilw02EOxWfhnQr4z8v7U0oASqyeDYNp2ZbgJhhiXqO5AcIYfwV74NrMF_sr44I98BiL59zhA6u-x1ZNUMrDYOhtRI6YUh?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/gu3nmP0a719RnY9Zd8uZrE-5sUkFFFcLhtSjSF90g62NjY0A6xgYYAKtMVwm18j-bp7a2-QaBdnG1BB3wP_FGhFtSD_nA-kjjWrx8Ci1cC4_xyKMZD0gEXKmtj4ZVfosSwgK8rO8zoS2Nq3DrMBj7_bhWWebBalP8Sftx-YH0X9JgfmW5kA7-x6_5HNf_WjR?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/XJgdTgfISQMalrHMB72oplkbUif_aqqYjFF2IAR6L96Rf8l12MdU8dFM7Kz5ZoGtCe8hNUCIezFz6wPdPNZZ38Yv4iBl6G2RkCncy2m8ZBYl0kuurW95qT3LyVZJBNEmPtasD0InZL9nq3BnkdIaub1crtuxmstA3HFZH_FXoUQQdVBH8J8_90KWvcwl64ya?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/2hIfpAmlGmR6_83RAUznccyLRN9eOdBy_WqNTMQ-GCqT0f3N_LSsBiOOuGT01ZbKHKZ9LVPNwCz0VaQiGEK-3zcAd_O3Uo2uYQsMX61Szetj9Kr-C6e9frpxEMcg-XX0kAt8cHprnUA9_6kECCavnLXfPZ-05BMMeuFk6hEibcaPFcEMGgfx_jR9Vtya9G_z?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/nvBUzP8wUvPS1U45749gFRN3Tj9F1VIxetW7Jyfzd1hPfXXBXIHj3DudOgIubClSU-sjMXssz7NfzfbEyAnLQJEDfjHdN2PeCej7LWvVPWgRGjdgYpXwwAfTEA4H76y4vJ6xqwTthChLZ4aH4KvdS7JGuJDXnlSnBSrByZ5cleyNW1LVt89EKKlHxwnIaKmU?purpose=fullsize)
+
+Mô hình đề xuất:
+
+```text
+CARGOTRUST
+│
+├── ĐƠN HÀNG ORD-2026-001
+│   │
+│   ├── Thông tin giao dịch
+│   │   ├── Người mua
+│   │   ├── Người bán
+│   │   ├── Hàng hóa
+│   │   ├── Số lượng
+│   │   └── Giá trị hợp đồng
+│   │
+│   ├── Bộ chứng từ
+│   │   ├── Sales Contract
+│   │   ├── Commercial Invoice
+│   │   ├── Packing List
+│   │   ├── Bill of Lading
+│   │   ├── Certificate of Origin
+│   │   └── Other Documents
+│   │
+│   ├── AI Document Review
+│   │   ├── Kiểm tra dữ liệu
+│   │   ├── Đối chiếu chéo
+│   │   └── Phát hiện sai lệch
+│   │
+│   ├── Approval Workflow
+│   │   ├── Chờ phê duyệt
+│   │   ├── Yêu cầu chỉnh sửa
+│   │   └── Đã phê duyệt
+│   │
+│   ├── Protected Signing
+│   │
+│   └── Audit Trail
+│
+└── ĐƠN HÀNG ORD-2026-002
+    └── Một bộ chứng từ độc lập khác
+```
+
+Điểm quan trọng là người dùng vẫn có thể tìm kiếm một Invoice cụ thể, nhưng từ Invoice đó họ có thể truy cập ngay đơn hàng và toàn bộ chứng từ liên quan.
+
+**Như vậy, chúng ta không loại bỏ quản lý chứng từ riêng lẻ. Chúng ta đặt chứng từ vào đúng ngữ cảnh nghiệp vụ của nó.**
+
+---
+
+# 2. Kiểm tra lại nghiệp vụ: Một đơn hàng xuất nhập khẩu cần những chứng từ nào?
+
+Trước khi thiết kế giao diện, cần phân biệt ba khái niệm:
+
+* **Order:** Giao dịch hoặc đơn hàng thương mại.
+* **Shipment:** Một lần hoặc một đợt vận chuyển hàng hóa.
+* **Document:** Chứng từ chứng minh, mô tả hoặc phục vụ việc thực hiện giao dịch và vận chuyển.
+
+Ba khái niệm này có liên quan nhưng không đồng nhất.
+
+Một đơn hàng có thể chỉ có một lần giao hàng, nhưng cũng có thể được chia thành nhiều đợt giao hàng. Khi đó, không phải chứng từ nào cũng chỉ có một bản cho cả đơn hàng.
+
+Ví dụ:
+
+```text
+ORDER ORD-001
+│
+├── Contract
+│
+├── Shipment 1
+│   ├── Invoice INV-001-A
+│   ├── Packing List PL-001-A
+│   └── Bill of Lading BL-001-A
+│
+└── Shipment 2
+    ├── Invoice INV-001-B
+    ├── Packing List PL-001-B
+    └── Bill of Lading BL-001-B
+```
+
+Đây là trường hợp một đơn hàng được giao thành hai đợt. Contract có thể áp dụng cho toàn bộ đơn hàng, trong khi Invoice, Packing List và vận đơn có thể được lập riêng theo từng đợt.
+
+Vì vậy, mình đề xuất cấu trúc dữ liệu có ba tầng:
+
+**Order → Shipment → Documents**
+
+Trong đó, các chứng từ cấp đơn hàng có thể liên kết trực tiếp với Order, còn chứng từ phát sinh theo đợt vận chuyển được liên kết với Shipment tương ứng.
+
+Cách tổ chức này linh hoạt hơn việc bắt buộc tất cả chứng từ phải thuộc một danh sách phẳng duy nhất.
+
+## 2.1. Bộ chứng từ cốt lõi
+
+Danh sách bạn đề xuất là một điểm khởi đầu tốt. Tuy nhiên, cần lưu ý rằng **không phải giao dịch nào cũng bắt buộc phải có đủ tất cả các loại chứng từ này**. Yêu cầu thực tế phụ thuộc vào loại hàng hóa, phương thức vận chuyển, điều kiện hợp đồng, quy định liên quan và yêu cầu của thị trường nhập khẩu.
+
+Cổng thông tin thương mại Việt Nam cũng phân biệt các chứng từ theo thủ tục và hoàn cảnh cụ thể. Chẳng hạn, C/O có thể cần để chứng minh xuất xứ hoặc hưởng ưu đãi thuế quan, còn giấy phép và chứng nhận chuyên ngành phụ thuộc vào loại hàng hóa. ([Viet Nam National Trade Repository][1])
+
+Mình đề xuất phân loại như sau:
+
+| Chứng từ                                             | Vai trò                                                                     | Nên quản lý ở đâu?                             |
+| ---------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------- |
+| **Sales Contract** — Hợp đồng thương mại             | Xác định các điều khoản giao dịch, hàng hóa, giá và điều kiện giao hàng     | Cấp Order                                      |
+| **Purchase Order (PO)** — Đơn đặt hàng               | Ghi nhận yêu cầu đặt hàng và thông tin đặt mua                              | Cấp Order                                      |
+| **Commercial Invoice** — Hóa đơn thương mại          | Ghi nhận hàng hóa và giá trị thanh toán                                     | Order hoặc Shipment, tùy cách lập hóa đơn      |
+| **Packing List** — Phiếu đóng gói                    | Mô tả số kiện, quy cách đóng gói, trọng lượng và các thông tin liên quan    | Thường gắn với Shipment                        |
+| **Bill of Lading (B/L)** — Vận đơn đường biển        | Chứng từ vận tải đường biển                                                 | Shipment                                       |
+| **Certificate of Origin (C/O)** — Chứng nhận xuất xứ | Chứng minh xuất xứ hàng hóa theo mục đích và quy tắc áp dụng                | Order hoặc Shipment, tùy phạm vi chứng nhận    |
+| **CFS** — Certificate of Free Sale                   | Chứng nhận lưu hành tự do, khi áp dụng                                      | Theo yêu cầu của hàng hóa và thị trường        |
+| **CQ** — Certificate of Quality                      | Chứng nhận chất lượng, nếu được yêu cầu                                     | Theo lô hàng hoặc phạm vi chứng nhận           |
+| **Certificate of Conformity** — Chứng nhận hợp quy   | Chứng minh sự phù hợp với yêu cầu hoặc quy chuẩn áp dụng                    | Theo sản phẩm, lô hàng hoặc phạm vi chứng nhận |
+| **Customs Declaration** — Tờ khai hải quan           | Ghi nhận việc khai báo hải quan                                             | Shipment hoặc lô khai báo                      |
+| **Other Documents**                                  | Giấy phép, chứng nhận kiểm dịch, kiểm tra chuyên ngành và các tài liệu khác | Theo yêu cầu thực tế                           |
+
+Cổng thông tin thương mại Việt Nam nêu các tài liệu như hóa đơn thương mại, vận đơn, Packing List, C/O và giấy phép liên quan trong hồ sơ nhập khẩu tùy trường hợp. ([Vietnam Trade Portal][2])
+
+### Một điều mình muốn điều chỉnh trong đề xuất ban đầu
+
+Bạn đang liệt kê Contract, Invoice, Packing List, Bill of Lading và C/O như một bộ chứng từ hoàn chỉnh. Đây là một **bộ mẫu phù hợp để demo**, nhưng không nên biến nó thành quy định bắt buộc cho mọi đơn hàng.
+
+Ví dụ:
+
+* Nếu vận chuyển bằng đường hàng không, chứng từ vận tải thường là **Air Waybill (AWB)** chứ không phải Bill of Lading đường biển.
+* Nếu giao dịch không yêu cầu chứng minh xuất xứ để hưởng ưu đãi thuế quan hoặc phục vụ mục đích khác, C/O có thể không cần thiết.
+* CFS, CQ và chứng nhận hợp quy chỉ nên xuất hiện khi giao dịch hoặc loại hàng hóa thực sự cần chúng.
+
+Như vậy, CargoTrust nên có **bộ chứng từ mẫu theo loại giao dịch**, cho phép người dùng thêm hoặc loại bỏ các tài liệu tùy trường hợp, thay vì ép mọi đơn hàng theo cùng một checklist.
+
+---
+
+# 3. Cấu trúc sản phẩm mới: Order Workspace
+
+Mình đề xuất thay đổi trọng tâm giao diện từ **Documents** sang **Orders**, nhưng vẫn giữ Documents như một phân hệ riêng để tra cứu toàn hệ thống.
+
+## 3.1. Trang Orders — Danh sách đơn hàng
+
+Thay vì hiển thị một danh sách chứng từ dài, Dashboard sẽ có bảng các đơn hàng.
+
+Ví dụ:
+
+| Order ID     | Đối tác           | Loại hàng            | Chứng từ | Tình trạng    | Hành động    |
+| ------------ | ----------------- | -------------------- | -------- | ------------- | ------------ |
+| ORD-2026-001 | Seoul Electronics | Linh kiện điện tử    | 5/6      | Chưa đồng bộ  | Xem đơn hàng |
+| ORD-2026-002 | Pacific Trading   | Thiết bị công nghiệp | 7/7      | Cần kiểm tra  | Xem cảnh báo |
+| ORD-2026-003 | Global Parts      | Phụ tùng máy móc     | 6/6      | Chờ phê duyệt | Xem yêu cầu  |
+| ORD-2026-004 | East Asia Supply  | Nguyên liệu sản xuất | 6/6      | Đã phê duyệt  | Xem đơn hàng |
+
+Đây là dữ liệu minh họa để thiết kế giao diện, không phải dữ liệu từ một doanh nghiệp thực tế.
+
+### Mỗi đơn hàng cần cho người dùng biết điều gì?
+
+Mình nghĩ bốn thông tin quan trọng nhất là:
+
+1. **Completeness:** Bộ chứng từ đã đủ theo checklist của đơn hàng chưa?
+2. **Consistency:** Thông tin giữa các chứng từ đã khớp nhau chưa?
+3. **Approval:** Đơn hàng đang chờ ai phê duyệt?
+4. **Signing:** Những chứng từ nào cần ký và đã ký đến đâu?
+
+Bốn khái niệm này không nên bị gộp thành một trạng thái duy nhất, vì chúng mô tả bốn khía cạnh khác nhau.
+
+---
+
+## 3.2. Trang chi tiết Order
+
+Khi nhấn vào một đơn hàng, người dùng đi vào một không gian làm việc riêng.
+
+Mình đề xuất chia thành sáu khu vực.
+
+### A. Order Overview
+
+Hiển thị thông tin chung:
+
+* Order ID.
+* Buyer và Seller.
+* Loại hàng hóa.
+* Tổng số lượng.
+* Giá trị giao dịch.
+* Đồng tiền thanh toán.
+* Incoterms, nếu có.
+* Ngày đặt hàng.
+* Ngày giao hàng dự kiến.
+* Các Shipment liên quan.
+
+### B. Document Checklist
+
+Đây là khu vực quan trọng nhất.
+
+| Chứng từ              | Trạng thái    | AI Review          | Phê duyệt      | Hành động |
+| --------------------- | ------------- | ------------------ | -------------- | --------- |
+| Sales Contract        | Đã tải lên    | Đã kiểm tra        | Đã phê duyệt   | Xem       |
+| Purchase Order        | Đã tải lên    | Đã kiểm tra        | Không yêu cầu  | Xem       |
+| Commercial Invoice    | Đã tải lên    | Phát hiện sai lệch | Chưa phê duyệt | Kiểm tra  |
+| Packing List          | Đã tải lên    | Đã kiểm tra        | Chưa yêu cầu   | Xem       |
+| Bill of Lading        | Chưa có       | Chưa kiểm tra      | Chưa yêu cầu   | Tải lên   |
+| Certificate of Origin | Chưa có       | Chưa kiểm tra      | Chưa yêu cầu   | Tải lên   |
+| Other Documents       | Không áp dụng | —                  | —              | Quản lý   |
+
+Trong sản phẩm thật, trạng thái `Không áp dụng` chỉ được dùng khi người có quyền xác nhận rằng chứng từ không cần thiết đối với đơn hàng đó, hoặc khi hệ thống có căn cứ nghiệp vụ rõ ràng để xác định điều này.
+
+Không nên mặc định chứng từ chưa tải lên là không cần thiết.
+
+### C. AI Document Review
+
+Hiển thị các kết quả đối chiếu:
+
+* Số lượng trên Invoice có khớp PO không?
+* Giá trị trên Invoice có phù hợp với Contract không?
+* Thông tin người mua và người bán có nhất quán không?
+* Thông tin hàng hóa trên Packing List có phù hợp với Invoice không?
+* Số tham chiếu trên chứng từ có liên kết với đúng Order không?
+
+Người dùng có thể xem từng sai lệch, kiểm tra dữ liệu nguồn và quyết định yêu cầu chỉnh sửa hay chuyển sang bước rà soát tiếp theo.
+
+### D. Approval Workflow
+
+Hiển thị:
+
+* Người yêu cầu phê duyệt.
+* Người đang chịu trách nhiệm xử lý.
+* Thời điểm gửi yêu cầu.
+* Trạng thái phê duyệt.
+* Lý do từ chối hoặc yêu cầu chỉnh sửa.
+* Các điều kiện còn thiếu.
+
+### E. Signing Center
+
+Hiển thị danh sách tài liệu cần ký, phiên bản tài liệu được phê duyệt và trạng thái của yêu cầu ký.
+
+Nếu tài liệu thay đổi sau khi được phê duyệt, hệ thống phải kiểm tra lại xem việc phê duyệt cũ có còn hợp lệ hay không.
+
+### F. Audit Trail
+
+Hiển thị lịch sử của đơn hàng:
+
+* Ai tạo đơn hàng?
+* Ai tải lên chứng từ?
+* Khi nào AI phát hiện sai lệch?
+* Ai xử lý sai lệch?
+* Ai phê duyệt?
+* Chứng từ nào đã được ký?
+* Trạng thái thay đổi vào thời điểm nào?
+
+Như vậy, người dùng có thể hiểu toàn bộ tiến trình của một giao dịch mà không cần tự ghép các chứng từ từ nhiều nơi.
+
+---
+
+# 4. Thiết kế hệ thống trạng thái: Không nên chỉ có một trạng thái
+
+Đây là điểm mình khuyên nên thiết kế kỹ trước khi sửa app.
+
+Bạn đề xuất các trạng thái như:
+
+* Đồng bộ chứng từ.
+* Chưa đồng bộ.
+* Yêu cầu kiểm tra.
+* Ký.
+
+Những trạng thái này hữu ích, nhưng chúng đang trộn lẫn các khái niệm khác nhau. Chẳng hạn, một bộ chứng từ có thể đầy đủ nhưng chưa khớp dữ liệu; cũng có thể đã khớp dữ liệu nhưng vẫn đang chờ phê duyệt.
+
+Nếu gộp tất cả vào một trạng thái, hệ thống sẽ khó biểu diễn chính xác tình hình của đơn hàng.
+
+## Đề xuất: Chia trạng thái thành bốn nhóm
+
+### Nhóm 1 — Tình trạng đầy đủ của bộ chứng từ
+
+| Trạng thái    | Ý nghĩa                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------ |
+| Chưa bắt đầu  | Chưa có chứng từ nào được tải lên                                                          |
+| Chưa đầy đủ   | Còn thiếu chứng từ bắt buộc theo checklist                                                 |
+| Đầy đủ        | Đã có tất cả chứng từ được yêu cầu                                                         |
+| Không áp dụng | Đơn hàng chưa cần bộ chứng từ này hoặc một số loại chứng từ đã được xác nhận không áp dụng |
+
+Mình đề xuất dùng **Đầy đủ / Chưa đầy đủ** thay vì “Đồng bộ / Chưa đồng bộ” cho nhóm này.
+
+Lý do: “Đồng bộ” trong phần mềm thường có nghĩa dữ liệu đã được đồng bộ giữa các hệ thống hoặc thiết bị. Trong khi vấn đề bạn đang mô tả là bộ chứng từ đã đủ hay chưa.
+
+Nếu sau này CargoTrust kết nối với hệ thống ERP hoặc hệ thống quản lý chứng từ khác, “Đồng bộ dữ liệu” có thể trở thành một trạng thái kỹ thuật riêng.
+
+### Nhóm 2 — Tình trạng đối chiếu dữ liệu
+
+| Trạng thái        | Ý nghĩa                                          |
+| ----------------- | ------------------------------------------------ |
+| Chưa kiểm tra     | Chưa chạy kiểm tra                               |
+| Đang kiểm tra     | Hệ thống đang xử lý                              |
+| Khớp dữ liệu      | Các trường được kiểm tra đáp ứng quy tắc         |
+| Cần kiểm tra      | Có sai lệch hoặc kết quả chưa đủ tin cậy         |
+| Đã xử lý sai lệch | Sai lệch đã được rà soát và xử lý theo quy trình |
+
+Lưu ý rằng `Khớp dữ liệu` không đồng nghĩa chứng từ chắc chắn hợp pháp hay đúng về mọi mặt. Nó chỉ có nghĩa những trường được kiểm tra đã đáp ứng các quy tắc đã định nghĩa.
+
+### Nhóm 3 — Trạng thái phê duyệt
+
+| Trạng thái        | Ý nghĩa                                 |
+| ----------------- | --------------------------------------- |
+| Chưa gửi          | Chưa tạo yêu cầu phê duyệt              |
+| Chờ phê duyệt     | Đã gửi yêu cầu                          |
+| Đang rà soát      | Người có thẩm quyền đang kiểm tra       |
+| Yêu cầu chỉnh sửa | Cần cập nhật chứng từ hoặc thông tin    |
+| Đã phê duyệt      | Các bước phê duyệt bắt buộc đã hoàn tất |
+| Bị từ chối        | Yêu cầu không được chấp thuận           |
+
+### Nhóm 4 — Trạng thái ký
+
+| Trạng thái        | Ý nghĩa                                                                           |
+| ----------------- | --------------------------------------------------------------------------------- |
+| Không yêu cầu ký  | Theo quy trình, chứng từ không cần ký qua hệ thống                                |
+| Chờ ký            | Đã đủ điều kiện để bắt đầu quy trình ký                                           |
+| Đang chờ xác thực | Cần xác minh người thực hiện                                                      |
+| Đang xử lý chữ ký | Cơ chế ký đang được thực thi                                                      |
+| Đã ký             | Kết quả ký đã được xác minh                                                       |
+| Ký thất bại       | Thao tác ký không hoàn thành                                                      |
+| Cần ký lại        | Phiên bản hoặc trạng thái tài liệu đã thay đổi, cần thực hiện lại theo chính sách |
+
+**Lưu ý:** Trạng thái `Đã ký` chỉ nên được ghi nhận khi hệ thống thực sự xác minh được kết quả ký, không phải chỉ vì người dùng bấm nút.
+
+---
+
+# 5. Làm thế nào để hệ thống tạo ra một trạng thái tổng quan cho Order?
+
+Bốn nhóm trạng thái ở trên cho phép CargoTrust biết đầy đủ tình hình của đơn hàng. Tuy nhiên, người dùng vẫn cần một nhãn tổng quan dễ hiểu trên Dashboard.
+
+Mình đề xuất sử dụng một trạng thái tổng hợp, được tính từ các trạng thái thành phần.
+
+Ví dụ:
+
+```text
+ORDER: ORD-2026-001
+        │
+        ├── Document completeness: 5/6
+        │
+        ├── Data consistency: Needs review
+        │
+        ├── Approval: Not submitted
+        │
+        └── Signing: Not ready
+                │
+                ▼
+       OVERALL STATUS
+       "Cần xử lý"
+```
+
+Một số quy tắc ưu tiên có thể là:
+
+1. Nếu có sai lệch nghiêm trọng hoặc vấn đề bảo mật chưa xử lý → **Cần kiểm tra**.
+2. Nếu thiếu chứng từ bắt buộc → **Chưa đầy đủ**.
+3. Nếu bộ chứng từ đầy đủ nhưng chưa được đối chiếu → **Chờ kiểm tra**.
+4. Nếu dữ liệu đã được kiểm tra nhưng chưa hoàn thành phê duyệt → **Chờ phê duyệt**.
+5. Nếu đã được phê duyệt nhưng chưa ký → **Chờ ký**.
+6. Nếu mọi yêu cầu bắt buộc đã hoàn tất → **Hoàn tất**.
+
+Đây chỉ là bộ quy tắc khởi đầu. Trong triển khai thực tế, cần xác định rõ mức độ nghiêm trọng của từng sai lệch, các ngoại lệ được phép và yêu cầu của từng loại giao dịch.
+
+**Điểm quan trọng:** Trạng thái tổng quan không nên ghi đè lên trạng thái chi tiết. Người dùng cần biết vì sao đơn hàng đang ở trạng thái đó.
+
+---
+
+# 6. AI sẽ có giá trị hơn khi dữ liệu được tổ chức theo Order
+
+Đây là lý do kỹ thuật quan trọng nhất để chuyển sang Order-centric.
+
+Nếu AI chỉ xử lý từng tài liệu độc lập, nó có thể trích xuất đúng nội dung của từng file nhưng vẫn khó phát hiện những mâu thuẫn xuyên suốt giao dịch.
+
+Ví dụ:
+
+* Contract ghi 220 sản phẩm.
+* PO ghi 220 sản phẩm.
+* Invoice ghi 240 sản phẩm.
+* Packing List ghi 240 sản phẩm.
+
+Nếu xử lý từng chứng từ riêng biệt, cả Invoice và Packing List đều có thể được đọc chính xác. Nhưng khi đặt chúng trong cùng một Order, CargoTrust mới có thể phát hiện rằng hai chứng từ đang mâu thuẫn với Contract và PO.
+
+## Luồng AI đề xuất
+
+```text
+ORDER CREATED
+     │
+     ▼
+UPLOAD DOCUMENTS
+     │
+     ▼
+CLASSIFY DOCUMENT TYPE
+     │
+     ▼
+EXTRACT STRUCTURED DATA
+     │
+     ▼
+LINK DOCUMENTS TO ORDER / SHIPMENT
+     │
+     ▼
+NORMALIZE DATA
+     │
+     ▼
+CROSS-DOCUMENT VALIDATION
+     │
+     ├── Contract ↔ PO
+     ├── PO ↔ Invoice
+     ├── Invoice ↔ Packing List
+     ├── Packing List ↔ Transport Document
+     └── Origin / quality documents ↔ Applicable requirements
+     │
+     ▼
+GENERATE REVIEW FINDINGS
+     │
+     ▼
+HUMAN REVIEW WHEN REQUIRED
+     │
+     ▼
+APPROVAL WORKFLOW
+```
+
+Các cặp đối chiếu trên là ví dụ. Không phải mọi trường dữ liệu giữa hai loại chứng từ đều phải giống nhau hoàn toàn. Hệ thống cần xác định trường nào phải khớp, trường nào được phép khác nhau và trường nào chỉ cần kiểm tra tính hợp lý.
+
+Ví dụ, số lượng trên Invoice và Packing List có thể cần đối chiếu, nhưng các chứng từ có mục đích khác nhau nên không thể yêu cầu tất cả trường dữ liệu phải giống nhau.
+
+### Vai trò của AI và rule engine
+
+Mình đề xuất phân công rõ ràng:
+
+* **AI/OCR:** Đọc tài liệu, phân loại và trích xuất dữ liệu.
+* **Data normalization:** Chuẩn hóa định dạng số lượng, đơn vị đo, ngày tháng, tiền tệ và tên đối tác.
+* **Rule engine:** Thực hiện các phép đối chiếu có quy tắc xác định.
+* **AI-assisted review:** Giải thích sai lệch hoặc hỗ trợ người dùng hiểu những điểm cần xem xét.
+* **Human approver:** Quyết định đối với các trường hợp cần phê duyệt theo chính sách.
+* **Authorization engine:** Kiểm tra ai được phép thực hiện hành động tiếp theo.
+
+AI không nên tự quyết định rằng một chứng từ đã đủ điều kiện pháp lý để ký chỉ dựa trên nội dung trích xuất.
+
+---
+
+# 7. Một vấn đề cần giải quyết: Order và Shipment không phải lúc nào cũng một-một
+
+Mình muốn nhấn mạnh điểm này vì nếu bỏ qua, thiết kế mới có thể gặp vấn đề khi mở rộng.
+
+Giả sử doanh nghiệp ký một hợp đồng mua 1.000 bộ linh kiện.
+
+Nhà cung cấp giao:
+
+* 400 bộ trong tháng 11.
+* 350 bộ trong tháng 12.
+* 250 bộ trong tháng 1.
+
+Đây vẫn có thể là cùng một giao dịch thương mại, nhưng ba đợt giao hàng có thể có các Packing List và vận đơn riêng.
+
+Nếu CargoTrust chỉ có cấu trúc:
+
+```text
+Order
+└── One document list
+```
+
+thì vẫn có thể lưu được tài liệu, nhưng khó phân biệt chứng từ thuộc đợt giao hàng nào.
+
+Mình đề xuất:
+
+```text
+ORDER ORD-001
+│
+├── Contract
+├── Purchase Order
+│
+├── SHIPMENT SHP-001
+│   ├── Invoice
+│   ├── Packing List
+│   ├── Bill of Lading
+│   └── Applicable certificates
+│
+├── SHIPMENT SHP-002
+│   ├── Invoice
+│   ├── Packing List
+│   ├── Bill of Lading
+│   └── Applicable certificates
+│
+└── SHIPMENT SHP-003
+    ├── Invoice
+    ├── Packing List
+    ├── Bill of Lading
+    └── Applicable certificates
+```
+
+Không phải chứng từ nào cũng nhất thiết phải thuộc Shipment. Contract và PO thường có thể được gắn ở cấp Order; một số chứng nhận lại có thể áp dụng cho nhiều lô hàng hoặc cho một phạm vi sản phẩm cụ thể.
+
+Vì vậy, mỗi chứng từ nên có các thuộc tính như:
+
+* Document ID.
+* Document Type.
+* Order ID.
+* Shipment ID, nếu áp dụng.
+* Version.
+* Issued Date.
+* Issuer.
+* Status.
+* Applicable Scope.
+* Related Documents.
+
+Điều này giúp hệ thống liên kết chứng từ chính xác mà không buộc mọi tài liệu vào cùng một cấu trúc cứng nhắc.
+
+---
+
+# 8. Đề xuất cấu trúc giao diện mới cho CargoTrust
+
+Mình đề xuất giữ nguyên phong cách giao diện hiện tại: xanh navy, trắng, xanh dương và đỏ để cảnh báo. Chúng ta chỉ cần thay đổi cấu trúc thông tin và luồng thao tác.
+
+## Sidebar đề xuất
+
+```text
+CARGOTRUST
+│
+├── Dashboard
+│
+├── Orders
+│   ├── All Orders
+│   ├── Needs Attention
+│   ├── Pending Approval
+│   └── Ready for Signing
+│
+├── Shipments
+│
+├── Documents
+│   ├── All Documents
+│   └── Document Search
+│
+├── AI Review
+│
+├── Approval Queue
+│
+├── Access Policies
+│
+├── Counterparties
+│
+├── Audit Trail
+│
+└── Settings
+```
+
+Trong đó:
+
+* **Orders** là phân hệ chính để xử lý giao dịch.
+* **Shipments** dùng để quản lý các đợt giao hàng.
+* **Documents** là kho chứng từ toàn hệ thống.
+* **AI Review** là nơi xem các sai lệch cần rà soát.
+* **Approval Queue** tập trung các yêu cầu đang chờ người có thẩm quyền.
+
+Không nên xóa Documents hoàn toàn, bởi nhân viên có thể cần tìm một vận đơn cụ thể mà không nhớ mã đơn hàng.
+
+## Luồng thao tác chính của người dùng
+
+```text
+Dashboard
+    │
+    ▼
+Orders
+    │
+    ▼
+Select Order
+    │
+    ▼
+Order Workspace
+    │
+    ├── Overview
+    ├── Documents
+    ├── Shipments
+    ├── AI Review
+    ├── Approvals
+    ├── Signing
+    └── Audit Trail
+```
+
+Từ một Order Workspace, người dùng có thể đi qua gần như toàn bộ quy trình mà không phải quay lại nhiều phân hệ khác nhau.
+
+---
+
+# 9. Tình huống demo nên sử dụng tại RMIT Hackathon
+
+Để chứng minh giá trị của CargoTrust, mình không nghĩ nên demo quá nhiều loại chứng từ cùng lúc. Một kịch bản có sai lệch rõ ràng sẽ thuyết phục hơn.
+
+Mình đề xuất một đơn hàng nhập khẩu linh kiện điện tử.
+
+### Bước 1 — Tạo Order
+
+Mã đơn hàng: `ORD-2026-001`
+
+Thông tin:
+
+* Người bán: Seoul Electronics.
+* Người mua: Pacific Components.
+* Hàng hóa: Electronic Components.
+* Số lượng theo Contract và PO: 220 đơn vị.
+
+### Bước 2 — Tải bộ chứng từ
+
+Người dùng tải lên:
+
+* Sales Contract.
+* Purchase Order.
+* Commercial Invoice.
+* Packing List.
+
+B/L và C/O được đánh dấu theo yêu cầu của tình huống demo. Nếu C/O là chứng từ cần thiết cho giao dịch mẫu, nó phải được khai báo là bắt buộc trong checklist.
+
+### Bước 3 — AI đọc chứng từ
+
+AI trích xuất các trường như:
+
+* Số lượng.
+* Đơn giá.
+* Tổng giá trị.
+* Người mua và người bán.
+* Mã tham chiếu.
+
+### Bước 4 — Phát hiện sai lệch
+
+Hệ thống phát hiện:
+
+* Contract: 220 sản phẩm.
+* PO: 220 sản phẩm.
+* Invoice: 240 sản phẩm.
+* Packing List: 240 sản phẩm.
+
+CargoTrust chuyển trạng thái đối chiếu sang `Cần kiểm tra`.
+
+### Bước 5 — Ngăn phê duyệt hoặc ký khi chưa xử lý
+
+Người dùng thử gửi yêu cầu ký.
+
+Backend trong phiên bản hoàn chỉnh sẽ kiểm tra chính sách và từ chối nếu sai lệch đó thuộc loại phải xử lý trước khi ký.
+
+Giao diện giải thích rõ lý do bị chặn, thay vì chỉ hiển thị một thông báo lỗi chung.
+
+### Bước 6 — Chỉnh sửa và kiểm tra lại
+
+Người dùng tải lên phiên bản Invoice đã sửa hoặc ghi nhận cách xử lý sai lệch theo quy trình được cho phép.
+
+Hệ thống đối chiếu lại và cập nhật trạng thái.
+
+### Bước 7 — Phê duyệt và ký
+
+Người có thẩm quyền phê duyệt đúng phiên bản tài liệu.
+
+Hệ thống kiểm tra quyền, trạng thái phê duyệt và phiên bản tài liệu trước khi cho phép thao tác ký được bảo vệ.
+
+### Bước 8 — Audit Trail
+
+CargoTrust ghi nhận các sự kiện chính để người dùng có thể xem lại toàn bộ tiến trình.
+
+**Đây là một kịch bản demo tốt vì nó thể hiện được mối liên kết giữa AI, quản lý chứng từ, phân quyền và bảo vệ thao tác nhạy cảm.**
+
+---
+
+# 10. Công nghệ nào thực sự cần thiết cho phiên bản này?
+
+Mình không đề xuất thêm blockchain chỉ vì đây là một dự án về bảo mật.
+
+Đối với CargoTrust, thứ tự ưu tiên nên là:
+
+| Công nghệ                   | Mục đích                                                           | Ưu tiên                        |
+| --------------------------- | ------------------------------------------------------------------ | ------------------------------ |
+| Database và backend         | Quản lý Order, Shipment, Document và trạng thái                    | Rất cao                        |
+| AI/OCR                      | Trích xuất dữ liệu từ chứng từ                                     | Cao                            |
+| Rule engine                 | Đối chiếu dữ liệu giữa các chứng từ                                | Rất cao                        |
+| TideCloak/OIDC              | Xác thực người dùng                                                | Rất cao                        |
+| Authorization policies      | Kiểm soát quyền và quy trình phê duyệt                             | Rất cao                        |
+| Versioning và document hash | Gắn phê duyệt với đúng phiên bản tài liệu                          | Cao                            |
+| Tide-supported signing/MPC  | Bảo vệ thao tác ký theo kiến trúc được hỗ trợ                      | Cao đối với mục tiêu hackathon |
+| Audit log                   | Truy vết hoạt động và kết quả                                      | Rất cao                        |
+| Blockchain                  | Chia sẻ lịch sử sự kiện giữa nhiều tổ chức độc lập nếu thực sự cần | Tùy nhu cầu                    |
+
+Điểm đặc biệt của dự án không phải là sử dụng nhiều công nghệ nhất có thể. Điểm đặc biệt là **kết nối kiểm tra nghiệp vụ với kiểm soát quyền**.
+
+AI có thể nhận ra một hóa đơn có sai lệch. Rule engine xác định sai lệch đó có vi phạm điều kiện nào. Hệ thống phân quyền quyết định ai được xử lý ngoại lệ. Cuối cùng, cơ chế ký được bảo vệ chỉ cho phép thực hiện hành động khi đáp ứng các điều kiện tương ứng.
+
+Đây là cách CargoTrust có thể kết nối bài toán logistics với công nghệ bảo mật của Tide.
+
+---
+
+# 11. Kết luận brainstorm: Mình đề xuất chốt hướng thiết kế như sau
+
+Mình đồng ý với đề xuất của bạn và khuyến nghị chuyển CargoTrust sang kiến trúc:
+
+**Order-centric Workspace + Shipment-level Documents + Cross-document AI Review + Policy-based Approval & Signing.**
+
+Cụ thể:
+
+1. **Order là đơn vị quản lý chính.** Người dùng nhìn thấy tình trạng tổng thể của giao dịch.
+2. **Mỗi Order có một bộ chứng từ được cấu hình theo nghiệp vụ.** Không bắt buộc mọi đơn hàng có cùng danh sách tài liệu.
+3. **Shipment là tầng trung gian cần thiết.** Nó giúp xử lý trường hợp giao hàng nhiều đợt hoặc phát sinh nhiều bộ chứng từ vận chuyển.
+4. **Documents vẫn tồn tại như một kho toàn hệ thống.** Người dùng có thể tìm từng tài liệu và truy ngược về Order hoặc Shipment.
+5. **Trạng thái được tách thành các nhóm độc lập:** đầy đủ chứng từ, đối chiếu dữ liệu, phê duyệt và ký.
+6. **AI hoạt động trên dữ liệu liên kết theo Order/Shipment**, thay vì chỉ đọc từng file độc lập.
+7. **TideCloak và cơ chế ký được bảo vệ nằm trong lớp kiểm soát truy cập và thực thi thao tác**, không phải lớp giao diện.
+8. **Audit Trail ghi nhận các sự kiện xuyên suốt vòng đời của Order.**
+
+Một lưu ý về nguồn tham khảo: các tài liệu về thủ tục xuất nhập khẩu cần được đối chiếu theo loại hàng, phương thức vận tải và quy định hiện hành; danh sách chứng từ trong CargoTrust nên được xem là checklist nghiệp vụ có thể cấu hình, không phải danh sách bắt buộc áp dụng cho mọi giao dịch. Cổng thông tin thương mại Việt Nam là điểm khởi đầu phù hợp để nghiên cứu các trường hợp cụ thể. ([Viet Nam National Trade Repository][1])
+
+**Theo mình, bước tiếp theo nên là chốt lại mô hình dữ liệu và trạng thái của Order trước, rồi mới sửa HTML.** Nếu sửa giao diện ngay mà chưa xác định rõ quan hệ Order–Shipment–Document và quy tắc trạng thái, chúng ta có nguy cơ phải thiết kế lại nhiều lần khi bắt đầu tích hợp AI và backend.
+
+[1]: https://vntr.moit.gov.vn/procedures/detail/3?utm_source=chatgpt.com "Procedure Detail"
+[2]: https://www.vietnamtradeportal.gov.vn/index.php?id=795&page=148&r=site%2Fdisplay&utm_source=chatgpt.com "The Trade Portal - Display Site"
